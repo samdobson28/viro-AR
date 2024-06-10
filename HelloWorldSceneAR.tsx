@@ -147,18 +147,10 @@ const HelloWorldSceneAR = () => {
       srcModel += modelSource;
       console.log("Model Source URI:", srcModel); // Log model source URI
 
-      const x = entry.additionalData.x
-        ? parseFloat(entry.additionalData.x) * 0.1
-        : 0;
-      const y = entry.additionalData.y
-        ? parseFloat(entry.additionalData.y) * 0.1
-        : 0;
-      const z = entry.additionalData.z
-        ? parseFloat(entry.additionalData.z) * 0.1
-        : 0;
-      const scale = entry.additionalData.scale
-        ? parseFloat(entry.additionalData.scale) * 0.1
-        : 0.1;
+      const x = index * 0.5; // Position models in a row with 0.5 units apart
+      const y = 0; // Uniform height
+      const z = -1; // Fixed z position for all models
+      const scale = 0.1; // Uniform scale for all models
       const xAngle = entry.additionalData.xAngle
         ? parseFloat(entry.additionalData.xAngle)
         : 0;
@@ -201,7 +193,7 @@ const HelloWorldSceneAR = () => {
       return (
         <ViroNode
           key={index}
-          position={[x, y - 0.5, z - 0.5]}
+          position={[x, y, z]}
           dragType="FixedToWorld"
           onDrag={() => {}}
           animation={{ name: direction, run: spin, loop: true }}
