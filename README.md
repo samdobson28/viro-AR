@@ -1,14 +1,8 @@
-# Viro Starter Kit
-
-This is a new [**React Native**](https://reactnative.dev) project, set up with `@reactvision/react-viro`.
-
-## How to Install Viro in an existing project?
-
-If you are integrating ViroReact into an existing project, have a look at our [Installation instructions](https://viro-community.readme.io/docs/installation-instructions).
+# Viro AR React Native Typescript app integrated with Echo3D
 
 ## Getting Started
 
-> **Note**: Make sure you have completed the [React Native - Environment Setup](https://reactnative.dev/docs/environment-setup) instructions. Stop before you get to the `Creating a new application` section; we have done that for you!
+> **Note**: Make sure you have completed the [React Native - Environment Setup](https://reactnative.dev/docs/environment-setup) instructions. And have the latest XCode installed.
 
 ## Step 1: Install Dependencies
 
@@ -33,10 +27,12 @@ To start Metro, run the following command from the _root_ of your React Native p
 ```bash
 npm start
 ```
+Keep this dev server running before launching the app in XCode.
 
 ## Step 3: Start your Application
 
 > **Warning**: Due to limitations of the Apple Simulator and the Android Emulator, you must run your project on a physical device.
+> **NOTE**: This requires an Apple Developer Account. You need to add your signing certificate / Apple ID to signing and capabilities in XCode.
 
 Let Metro Bundler run in its _own_ terminal. Open a _new_ terminal from the _root_ of your React Native project. Run the following command to start your _Android_ or _iOS_ app:
 
@@ -49,37 +45,6 @@ npx react-native run-android
 
 If everything is set up _correctly_, you should see your new app running on you device.
 
-#### Install CocoaPods
+## Viro Documentation
 
-```bash
-cd ios
-pod install
-cd ..
-```
-
-```bash
-# using npm
-npm run ios
-
-# OR using Yarn
-yarn ios
-```
-
-If everything is set up _correctly_, you should see your new app running in your _Android Emulator_ or _iOS Simulator_ shortly provided you have set up your emulator/simulator correctly.
-
-This is one way to run your app — you can also run it directly from within Android Studio and Xcode respectively.
-
-## Step 4: Modifying your App
-
-Now that you have successfully run the app, let's modify it.
-
-1. Open `App.tsx` in your text editor of choice and edit some lines.
-2. For **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Developer Menu** (<kbd>Ctrl</kbd> + <kbd>M</kbd> (on Window and Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (on macOS)) to see your changes!
-
-## Next Steps
-
-Check out our [documentation](https://viro-community.readme.io/) for guides, examples, and more!
-
-## Need help?
-
-[Reach us in Discord.](https://discord.gg/YfxDBGTxvG) or submit an issue!
+See [here](https://viro-community.readme.io/).
