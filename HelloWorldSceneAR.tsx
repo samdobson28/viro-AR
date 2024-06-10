@@ -1,18 +1,20 @@
-// this code is not currently in use
-
-
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { StyleSheet } from "react-native";
 import {
   ViroARScene,
   ViroText,
-  Viro3DObject,
-  ViroAmbientLight,
-  ViroSpotLight,
-  ViroNode,
   ViroTrackingStateConstants,
+  Viro3DObject,
+  ViroNode,
+  ViroSpotLight,
+  ViroQuad,
+  ViroAmbientLight,
 } from "@reactvision/react-viro";
 
+const API_KEY = "winter-frost-2822"; // Replace with your Echo3D API key.
+const FOLDER = "clothes";
+
+// Define types for Echo3D response
 interface Echo3DModel {
   hologram: {
     storageLocation: string;
@@ -22,6 +24,7 @@ interface Echo3DModel {
   };
   additionalData: {
     x?: string;
+    glbHologramStorageID?: string;
     y?: string;
     z?: string;
     scale?: string;
@@ -35,7 +38,7 @@ interface Echo3DModel {
     yTextPosition?: string;
     zTextPosition?: string;
     textColor?: string;
-    glbHologramStorageID?: string;
+    filePath?: string; // Add filePath to additionalData
   };
 }
 
@@ -46,46 +49,103 @@ interface Echo3DResponse {
   };
 }
 
-const HelloWorldSceneAR = () => {
-  const [hasARInitialized, setHasARInitialized] = useState(false);
-  const [entries, setEntries] = useState<any[]>([]);
+// Extend the global object to include echoDB
+declare global {
+  var echoDB: Echo3DResponse;
+}
 
-  const _onTrackingUpdated = (state: any, reason: any) => {
+interface State {
+  hasARInitialized: boolean;
+  text: string;
+  apiKey: string;
+  db: Echo3DModel[];
+}
+
+const HelloWorldSceneAR = () => {
+  const [state, setState] = useState<State>({
+    hasARInitialized: false,
+    text: "Initializing AR...",
+    apiKey: "",
+    db: [],
+  });
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch(
+          `https://console.echoar.xyz/query?key=${API_KEY}`
+        );
+        const responseText = await response.text(); // Read the response as text
+
+        try {
+          const json: Echo3DResponse = JSON.parse(responseText); // Parse JSON from text
+          global.echoDB = json;
+          setState((prevState) => ({
+            ...prevState,
+            apiKey: json.apiKey,
+            db: Object.values(json.db).filter(
+              (entry) => entry.additionalData.filePath === FOLDER
+            ), // Filter entries by filePath
+          }));
+          console.log("Fetched Data:", json); // Log fetched data
+        } catch (jsonError) {
+          console.error(
+            "JSON Parse error:",
+            jsonError,
+            "Response text:",
+            responseText
+          );
+        }
+      } catch (error) {
+        console.error("Failed to fetch data from Echo3D:", error);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const onTrackingUpdated = (
+    newState: ViroTrackingStateConstants,
+    reason: any
+  ) => {
     if (
-      !hasARInitialized &&
-      state === ViroTrackingStateConstants.TRACKING_NORMAL
+      !state.hasARInitialized &&
+      newState === ViroTrackingStateConstants.TRACKING_NORMAL
     ) {
-      const apiKey = global.echoDB.apiKey;
-      const db = Object.values(global.echoDB.db);
-      parseEcho3DData(apiKey, db);
-      setHasARInitialized(true);
+      setState((prevState) => ({
+        ...prevState,
+        hasARInitialized: true,
+        text: "",
+      }));
     }
   };
 
-  const parseEcho3DData = (apiKey: string, db: Echo3DModel[]) => {
-    const parsedEntries: any[] = [];
-
-    for (let entry of db) {
-      let srcModel = `https://api.echo3D.com/query?key=${apiKey}&file=`;
+  const entries = state.db
+    .filter((entry) => entry.hologram.type === "MODEL_HOLOGRAM")
+    .map((entry, index) => {
+      console.log("Filtered Entry:", entry); // Log filtered entries
+      let srcModel = `https://console.echoar.xyz/query?key=${state.apiKey}&file=`;
       const typeModel = entry.hologram.filename.toLowerCase().split(".").pop();
+      let modelSource;
 
-      switch (entry.hologram.type) {
-        case "VIDEO_HOLOGRAM":
-        case "IMAGE_HOLOGRAM":
-          continue;
-        case "MODEL_HOLOGRAM":
-          switch (typeModel) {
-            case "glb":
-              srcModel += entry.hologram.storageID;
-              break;
-            case "gltf":
-            case "obj":
-            case "fbx":
-              srcModel += entry.additionalData.glbHologramStorageID;
-              break;
-          }
-          break;
+      if (entry.hologram.type === "MODEL_HOLOGRAM") {
+        switch (typeModel) {
+          case "glb":
+            modelSource = entry.hologram.storageID;
+            break;
+          case "gltf":
+          case "obj":
+          case "fbx":
+            modelSource = entry.additionalData.glbHologramStorageID;
+            break;
+          default:
+            console.error("Unsupported model type:", typeModel);
+            return null;
+        }
       }
+
+      srcModel += modelSource;
+      console.log("Model Source URI:", srcModel); // Log model source URI
 
       const x = entry.additionalData.x
         ? parseFloat(entry.additionalData.x) * 0.1
@@ -108,12 +168,11 @@ const HelloWorldSceneAR = () => {
       const zAngle = entry.additionalData.zAngle
         ? parseFloat(entry.additionalData.zAngle)
         : 0;
-      let direction = entry.additionalData.direction;
-      let spin = false;
-      if (direction && (direction === "right" || direction === "left")) {
-        spin = true;
-        direction = "spinRight";
-      }
+      const direction = entry.additionalData.direction || "";
+      const spin =
+        direction && (direction === "right" || direction === "left")
+          ? true
+          : false;
       const textString = entry.additionalData.text || "";
       const textScale = entry.additionalData.textScale
         ? parseFloat(entry.additionalData.textScale) * 0.5
@@ -128,6 +187,7 @@ const HelloWorldSceneAR = () => {
         ? parseFloat(entry.additionalData.zTextPosition) * 0.1
         : 0;
       const textColor = entry.additionalData.textColor || "#ffffff";
+
       const textStyle = StyleSheet.create({
         style: {
           fontFamily: "Arial",
@@ -138,9 +198,9 @@ const HelloWorldSceneAR = () => {
         },
       });
 
-      parsedEntries.push(
+      return (
         <ViroNode
-          key={entry.hologram.storageID}
+          key={index}
           position={[x, y - 0.5, z - 0.5]}
           dragType="FixedToWorld"
           onDrag={() => {}}
@@ -174,19 +234,39 @@ const HelloWorldSceneAR = () => {
             lightReceivingBitMask={5}
             shadowCastingBitMask={2}
           />
+          <ViroQuad
+            rotation={[-90, 0, 0]}
+            width={0.5}
+            height={0.5}
+            arShadowReceiver={true}
+            lightReceivingBitMask={2}
+          />
         </ViroNode>
       );
-    }
-
-    setEntries(parsedEntries);
-  };
+    });
 
   return (
-    <ViroARScene onTrackingUpdated={_onTrackingUpdated}>
+    <ViroARScene onTrackingUpdated={onTrackingUpdated}>
       {entries}
-      <ViroAmbientLight color="#aaaaaa" influenceBitMask={1} />
+      <ViroText
+        text={state.text}
+        scale={[0.5, 0.5, 0.5]}
+        position={[0, 0, -1]}
+        style={styles.helloWorldTextStyle}
+      />
+      <ViroAmbientLight color={"#aaaaaa"} influenceBitMask={1} />
     </ViroARScene>
   );
 };
+
+const styles = StyleSheet.create({
+  helloWorldTextStyle: {
+    fontFamily: "Arial",
+    fontSize: 30,
+    color: "#ffffff",
+    textAlignVertical: "center",
+    textAlign: "center",
+  },
+});
 
 export default HelloWorldSceneAR;
